@@ -153,6 +153,9 @@ class Blackjack:
 
     def __init__(self):
         super().__init__()
+        self.HIT_KEYWORDS = (_("hit"), _("h"))
+        self.STAY_KEYWORDS = (_("stay"), _("stand"), _("s"))
+        self.DOUBLE_KEYWORDS = (_("double"), _("d"), _("2"))
 
     @game_engine(name="Blackjack")
     async def play(self, ctx, bet):
@@ -173,9 +176,10 @@ class Blackjack:
         # End game if player has 21
         if ph_count == 21:
             return ph, dh, amount
-        options = (_("hit"), _("stay"), _("double"))
+        options = self.HIT_KEYWORDS + self.STAY_KEYWORDS + self.DOUBLE_KEYWORDS
         condition1 = MessagePredicate.lower_contained_in(options, ctx=ctx)
-        condition2 = MessagePredicate.lower_contained_in((_("hit"), _("stay")), ctx=ctx)
+        condition2 = MessagePredicate.lower_contained_in(
+                self.HIT_KEYWORDS + self.STAY_KEYWORDS, ctx=ctx)
 
         embed = self.bj_embed(ctx, ph, dh, ph_count, initial=True)
         await ctx.send(ctx.author.mention, embed=embed)
@@ -186,11 +190,11 @@ class Blackjack:
             dh = self.dealer(dh)
             return ph, dh, amount
 
-        if choice.content.lower() == _("stay"):
+        if choice.content.lower() in self.STAY_KEYWORDS:
             dh = self.dealer(dh)
             return ph, dh, amount
 
-        if choice.content.lower() == _("double"):
+        if choice.content.lower() in self.DOUBLE_KEYWORDS:
             return await self.double_down(ctx, ph, dh, amount, condition2)
         else:
             ph, dh = await self.bj_loop(ctx, ph, dh, ph_count, condition2)
@@ -209,10 +213,10 @@ class Blackjack:
             except asyncio.TimeoutError:
                 return ph, dh, amount
 
-            if choice2.content.lower() == _("stay"):
+            if choice2.content.lower() in self.STAY_KEYWORDS:
                 dh = self.dealer(dh)
                 return ph, dh, amount
-            elif choice2.content.lower() == _("hit"):
+            elif choice2.content.lower() in self.HIT_KEYWORDS:
                 ph, dh = await self.bj_loop(ctx, ph, dh, deck.bj_count(ph), condition2)
                 dh = self.dealer(dh)
                 return ph, dh, amount
@@ -256,7 +260,7 @@ class Blackjack:
             except asyncio.TimeoutError:
                 break
 
-            if resp.content.lower() == _("stay"):
+            if resp.content.lower() in self.STAY_KEYWORDS:
                 break
             else:
                 continue
@@ -282,8 +286,8 @@ class Blackjack:
     def bj_embed(ctx, ph, dh, count1, initial=False, outcome=None):
         hand = _("{}\n**Score:** {}")
         footer = _("Cards in Deck: {}")
-        start = _("**Options:** hit, stay, or double")
-        after = _("**Options:** hit or stay")
+        start = _("**Options:** __h__it, __s__tay, or __d__ouble")
+        after = _("**Options:** __h__it or __s__tay")
         options = "**Outcome:** " + outcome if outcome else start if initial else after
         count2 = deck.bj_count(dh, hole=True) if not outcome else deck.bj_count(dh)
         hole = " ".join(deck.fmt_hand([dh[0]]))
